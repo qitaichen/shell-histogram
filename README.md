@@ -14,7 +14,7 @@
     source ~/.bash_profile
   
 
-# calculate # 
+# calculate #
 to calculate the result of a datetime, you can choose the time block size, min time block is one minute.
 
 ## input/output file format ##
@@ -47,7 +47,7 @@ the same as input file
       -n/--block-num  min block num: how many min you would merge to a block
 
 
-# histogram show # 
+# histogram show #
 to display the result in the console
 
 ## input file format ##
@@ -64,13 +64,11 @@ the same as calculate input file
       -c/--count  line max count: the max zero num of one line, default is 50
 
 
-# Tips # 
+# Tips #
 1. if the source file is huge, suggest you to process the file to min result first.
 e.g: histogram_cal -f input.file -n 1 > output.file 
 2. if the source file is small, you can process with pip operation, like this,
 e.g: cat input.file | histogram_cal -n 10 | histogram_show
-
-
 
 
 
