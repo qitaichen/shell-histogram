@@ -1,0 +1,100 @@
+#!/bin/sh
+# 直方图展示
+# @author Tiger
+# 
+# 文件格式要求
+# time,timeId,num
+# e.g: 
+#2016-01-01 12:00,3
+#2016-01-01 12:01,1
+#2016-01-01 12:03,1
+
+script_name=histogram_show
+version=0.1
+
+function usage() {
+    echo "Usage: $script_name [options]"
+    echo "  e.g: $script_name -f file.test -c 30"
+    echo ""
+    echo "Options:"
+    echo "  -h/--help       to see the help"
+    echo "  -f/--file   file name: the input file, if the file name is empty, read from standard input"
+    echo "  -c/--count  line max count: the max zero num of one line, default is 50"
+    echo ""
+    exit 0
+}
+
+line_max_count_default=50
+line_max_count=$line_max_count_default
+file_name=
+
+while [ ! -z "$1" ]; do
+    case "$1" in
+        -h|--help)
+            usage
+            shift
+            exit 0 ;;
+        -f|--file)
+            file_name=$2
+            shift
+            shift ;;
+        -c|--count)
+            line_max_count=$2
+            if [ "$line_max_count" -le 0 ]; then 
+                echo "line max count format error"
+                echo ""
+                exit 1
+            fi
+            shift
+            shift ;;
+        -*)
+            echo "Abort: Invalid param $1"
+            echo ""
+            shift
+            exit 1 ;;
+        *)
+            echo "Abort: Invalid param $1"
+            echo ""
+            shift
+            exit 1 ;;
+    esac
+done
+
+if [ ! -z "$file_name"  ] && [ ! -f "$file_name" ] ; then 
+    echo "file name : $file_name is not exists!"
+    echo ""
+    exit 1
+fi
+
+if [  -z "$file_name"  ]; then 
+    file_name=/dev/stdin
+fi
+
+# 统一逻辑，都把文件输出到中间文件
+tmp_file=.histogram.show.`date "+%s"`
+cat $file_name > $tmp_file
+
+
+resultMaxNum=`cat $tmp_file | awk -F ',' 'BEGIN{max=0} {if(max<int($2)){ max=int($2) } } END {print max}'`
+rate=`echo "$resultMaxNum $line_max_count" | awk '{print int($1/$2)}'`
+if [ -z "$rate" ] || [ "$rate" -le 0 ]; then
+    rate=1
+fi
+
+#echo "resultMaxNum=${resultMaxNum}"
+#echo "rate=${rate}"
+
+# to display in the console 
+while read line; do
+    timeId=`echo $line|awk -F ',' '{print $1}'`
+    num=`echo $line|awk -F ',' '{print $2}'`
+    if [ -z "$num" ] || [ "$num" -le 0 ]; then 
+        printf "%s [%06d] \n" "$timeId" "$num"
+    else
+        displayNum=`echo $line|awk -F ',' '{print int($2/rate)}' rate="$rate"`
+        printf "%s [%06d] %0${displayNum}d\n" "$timeId" "$num"  0
+    fi
+    
+done < $tmp_file  | sort
+
+rm -f $tmp_file

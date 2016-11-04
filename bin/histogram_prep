@@ -1,0 +1,57 @@
+#!/bin/sh
+# 直方图分析
+# 输入文件为日期列表，一行一个日期
+# @author Tiger
+# @since 2016-11-03
+#
+# 文件格式要求
+# time
+# e.g:
+#2016-01-01 12:01:01
+#2016-01-01 12:03:01
+#2016-01-01 12:07:01
+
+script_name=histogram_prep
+script_cal=histogram_cal
+
+function usage() {
+    echo "Usage: $script_name [options]"
+    echo "  e.g: $script_name -f file.test"
+    echo ""
+    echo "Options:"
+    echo "  -h/--help   to see the help"
+    echo "  -f/--file   file name: the input file, line format: timeString,num"
+    echo ""
+    exit 1
+}
+
+file_name=
+while [ ! -z "$1" ]; do
+    case "$1" in
+        -h|--help)
+            usage
+            shift
+            exit 0 ;;
+        -f|--file)
+            file_name=$2
+            shift
+            shift ;;
+        -*)
+            echo "Abort: Invalid param $1"
+            echo ""
+            shift
+            exit 1 ;;
+        *)
+            echo "Abort: Invalid param $1"
+            echo ""
+            shift
+            exit 1 ;;
+    esac
+done
+
+if [ -z "$file_name" ]; then 
+    $script_cal -n 1
+else
+    $script_cal -f $file_name -n 1
+fi
+

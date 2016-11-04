@@ -1,0 +1,94 @@
+#!/bin/sh
+# 直方图分析
+# 输入文件为日期列表，一行一个日期
+# @author Tiger
+# @since 2016-11-03
+
+# 文件格式要求
+# time,num
+# e.g: 
+#2016-01-01 12:00,3
+#2016-01-01 12:01,1
+#2016-01-01 12:03,1
+
+script_name=histogram_cal
+version=0.1
+
+function usage() {
+    
+    echo "Usage: $script_name [options]"
+    echo "  to cal the histogram result"
+    echo "  e.g: $script_name -f file.test -n 60"
+    echo ""
+    echo "Options: "
+    echo "  -h/--help       to see the help"
+    echo "  -f/--file       file name: the input file name, should be result of histogram prepare"
+    echo "  -n/--block-num  min block num: how many min you would merge to a block"
+    echo ""
+}
+
+
+file_name=
+block_num=1
+
+while [ ! -z "$1" ]; do
+    case "$1" in
+        -h|--help)
+            usage
+            shift
+            exit 0 ;;
+        -f|--file)
+            file_name=$2
+            shift
+            shift ;;
+        -n|--block-num)
+            block_num=$2
+            shift
+            shift ;;
+        -*)
+            echo "Abort: Invalid param $1"
+            echo ""
+            shift
+            exit 1 ;;
+        *)
+            echo "Abort: Invalid param $1"
+            echo ""
+            shift
+            exit 1 ;;
+    esac
+done
+
+tmp_file=.histogram.cal.`date +%s`
+if [ -f $tmp_file ]; then 
+    rm -f $tmp_file
+fi
+
+if [ ! -z "$file_name"  ] && [ ! -f "$file_name" ] ; then 
+    echo "file name : $file_name is not exists!"
+    echo ""
+    exit 1
+fi
+
+if [  -z "$file_name"  ]; then 
+    file_name=/dev/stdin
+fi
+
+while read line; do
+    #echo $line;
+    timeStr=`echo $line | awk -F ',' '{print $1}'`
+    timeIdCount=`echo $line | awk -F ',' '{print $2}'`
+    newLine=`date -d "${timeStr}" +%Y-%m-%d,%H,%M | awk -F ',' '
+    {
+        timeId=int(($2*60+$3)/times); 
+        minCount=timeId*times; 
+        hour=int(minCount/60); 
+        min=minCount%60; 
+        printf "%s %02d:%02d:00,%d\n", $1, hour, min, timeIdCount
+    }' times="$block_num" timeIdCount="$timeIdCount"` 
+    echo $newLine >> $tmp_file
+done < $file_name 
+
+cat $tmp_file |  awk -F ',' '{key=$1; count=$2>=1?$2:1; item[key] += count} END { for (key in item){printf "%s,%d\n", key, item[key] } }'
+if [ -f $tmp_file ]; then 
+    rm -f $tmp_file
+fi
