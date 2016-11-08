@@ -65,8 +65,10 @@ the same as calculate input file
       -c/--count  line max count: the max zero num of one line, default is 50
 
 
-# Histogram diff # 
-to calculate the diff between two histogram
+# Histogram diff #
+
+to calculate the diff between two histogram.
+
 algorithm : sqrt (sum((x/totalx-y/totaly)^2)/n)
 x: the val count of first histogram
 y: the val count of standard hisgogram
