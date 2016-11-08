@@ -7,9 +7,9 @@
 # 文件格式要求
 # time,num
 # e.g: 
-#2016-01-01 12:00,3
-#2016-01-01 12:01,1
-#2016-01-01 12:03,1
+#2016-01-01 12:00:01,3
+#2016-01-01 12:01:05,1
+#2016-01-01 12:03:21,1
 
 script_name=histogram_cal
 version=0.1
@@ -58,10 +58,6 @@ while [ ! -z "$1" ]; do
     esac
 done
 
-tmp_file=.histogram.cal.`date +%s`
-if [ -f $tmp_file ]; then 
-    rm -f $tmp_file
-fi
 
 if [ ! -z "$file_name"  ] && [ ! -f "$file_name" ] ; then 
     echo "file name : $file_name is not exists!"
@@ -73,22 +69,32 @@ if [  -z "$file_name"  ]; then
     file_name=/dev/stdin
 fi
 
-while read line; do
-    #echo $line;
-    timeStr=`echo $line | awk -F ',' '{print $1}'`
-    timeIdCount=`echo $line | awk -F ',' '{print $2}'`
-    newLine=`date -d "${timeStr}" +%Y-%m-%d,%H,%M | awk -F ',' '
-    {
-        timeId=int(($2*60+$3)/times); 
-        minCount=timeId*times; 
-        hour=int(minCount/60); 
-        min=minCount%60; 
-        printf "%s %02d:%02d:00,%d\n", $1, hour, min, timeIdCount
-    }' times="$block_num" timeIdCount="$timeIdCount"` 
-    echo $newLine >> $tmp_file
-done < $file_name 
+cat $file_name | awk -F ',' '
+{
+    timeStr = $1;
+    awkTimeStr = timeStr;
+    timeIdCount = $2>0 ? $2 : 1;
+    gsub(/-/, " ", awkTimeStr);
+    gsub(/:/, " ", awkTimeStr);
+    awkTimeStamp = mktime(awkTimeStr)
 
-cat $tmp_file |  awk -F ',' '{key=$1; count=$2>=1?$2:1; item[key] += count} END { for (key in item){printf "%s,%d\n", key, item[key] } }'
-if [ -f $tmp_file ]; then 
-    rm -f $tmp_file
-fi
+    hour = strftime("%H", awkTimeStamp);
+    min = strftime("%M", awkTimeStamp);
+    date = strftime("%Y-%m-%d", awkTimeStamp);
+    timeId = int((hour * 60 + min)/times) ;
+    minCount = timeId * times;
+    newHour = int(minCount / 60);
+    newMin = minCount % 60;
+
+    printf "%s %02d:%02d:00,%d\n", date, newHour, newMin, timeIdCount
+} 
+' times="$block_num"  | awk -F ',' '{
+    key=$1; 
+    count=$2>=1?$2:1; 
+    item[key] += count
+} 
+END { 
+    for (key in item) {
+        printf "%s,%d\n", key, item[key] 
+    } 
+}'

@@ -1,0 +1,97 @@
+#!/bin/sh
+# 时间分布的相似性计算
+# @author Tiger
+# @since 2016-11-07
+
+# 文件格式要求
+# time,num
+# e.g: 
+#2016-01-01 12:00:01,3
+#2016-01-01 12:01:05,1
+#2016-01-01 12:03:21,1
+
+
+script_name=histogram_similarity
+
+function usage() {
+    
+    echo "Usage: $script_name [options]"
+    echo "  to cal the histogram result"
+    echo "  e.g: $script_name -f file.test -s file.standard"
+    echo ""
+    echo "Options: "
+    echo "  -h/--help       to see the help"
+    echo "  -f/--file       file name: the input file name"
+    echo "  -s/--standard-file       file name: the standard input file name"
+    echo ""
+
+}
+
+
+file_name=
+standard_file_name=
+
+while [ ! -z "$1" ]; do
+    case "$1" in
+        -h|--help)
+            usage
+            shift
+            exit 0 ;;
+        -f|--file)
+            file_name=$2
+            shift
+            shift ;;
+        -s|--standard-file)
+            standard_file_name=$2
+            shift
+            shift ;;
+        -*)
+            echo "Abort: Invalid param $1"
+            echo ""
+            shift
+            exit 1 ;;
+        *)
+            echo "Abort: Invalid param $1"
+            echo ""
+            shift
+            exit 1 ;;
+    esac
+done
+
+
+if [ ! -f "$file_name" ]; then 
+    echo "file naem: $file_name is not exists!"
+    echo ""
+    exit 1
+fi
+
+if [ ! -f "$standard_file_name" ]; then 
+    echo "file naem: $standard_file_name is not exists!"
+    echo ""
+    exit 1
+fi
+
+
+# calculate sum result
+sum=`awk -F ',' '{sum+=$2}; END {print sum}' $file_name`
+sum2=`awk -F ',' '{sum+=$2}; END {print sum}' $standard_file_name`
+
+#echo "sum=$sum,sum2=$sum2"
+
+awk -F ',' '
+BEGIN {  }
+NR==FNR { record[$1] = $1; data[$1] = $2/sum; }
+NR>FNR { record[$1] = $1;  standard[$1] = $2/sum2;  }
+END { 
+    num = length(data);
+    total_sum = 0;
+    for (time in record) {
+        v1 = data[time]
+        v2 = standard[time]
+        total_sum += (v1 - v2)*(v1 - v2);
+    } 
+    result=sqrt(total_sum/num);
+    print result;
+}
+' sum="$sum" sum2="$sum2" $file_name $standard_file_name
+ 
